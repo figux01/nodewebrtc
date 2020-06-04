@@ -1,0 +1,27 @@
+{
+  "name": "thibuswebrtc",
+  "version": "1.0.0",
+  "description": "Some description",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/figux01/nodewebrtc.git"
+  },
+  "keywords": [
+    "webrtc",
+    "nodejs"
+  ],
+  "author": "Thibus",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/figux01/nodewebrtc/issues"
+  },
+  "homepage": "https://github.com/figux01/nodewebrtc#readme",
+  "dependencies": {
+    "ws": "^7.3.0"
+  }
+}

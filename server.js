@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 var http = require('http');
 
 const wss = new WebSocket.Server({
-    port: 8081,
+    port: 3000,
     host: '127.0.0.1',
     perMessageDeflate: {
       zlibDeflateOptions: {
@@ -52,6 +52,6 @@ wss.on('connection',function(ws, req){
 var server = http.createServer(function(request, response) {
     
   });
-server.listen(8081, function() {
+server.listen(3000, function() {
     console.log("serveur created");
  });

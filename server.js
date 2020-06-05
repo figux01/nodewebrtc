@@ -1,57 +1,63 @@
-const WebSocket = require('ws');
-var http = require('http');
+// Require needed modules and initialize Express app
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-const wss = new WebSocket.Server({
-    port: 8080,
-    host: 'localhost',
-    perMessageDeflate: {
-      zlibDeflateOptions: {
-        // See zlib defaults.
-        chunkSize: 1024,
-        memLevel: 7,
-        level: 3
-      },
-      zlibInflateOptions: {
-        chunkSize: 10 * 1024
-      },
-      // Other options settable:
-      clientNoContextTakeover: true, // Defaults to negotiated value.
-      serverNoContextTakeover: true, // Defaults to negotiated value.
-      serverMaxWindowBits: 10, // Defaults to negotiated value.
-      // Below options specified as default values.
-      concurrencyLimit: 10, // Limits zlib concurrency for perf.
-      threshold: 1024 // Size (in bytes) below which messages
-      // should not be compressed.
-    }
+const app = express();
+// Middleware for GET /events endpoint
+function eventsHandler(req, res, next) {
+  // Mandatory headers and http status to keep connection open
+  const headers = {
+    'Content-Type': 'text/event-stream',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache'
+  };
+  res.writeHead(200, headers);
+  // After client opens connection send all nests as string
+  const data = 'data: ' + JSON.stringify(nests) + '\n\n';
+  //const data = data: ${JSON.stringify(nests)}\n\n;
+  res.write(data);
+  // Generate an id based on timestamp and save res
+  // object of client connection on clients list
+  // Later we'll iterate it and send updates to each client
+  const clientId = Date.now();
+  const newClient = {
+    id: clientId,
+    res
+  };
+  clients.push(newClient);
+  // When client closes connection we update the clients list
+  // avoiding the disconnected one
+  req.on('close', () => {
+    console.log(clientId +' Connection closed');
+    clients = clients.filter(c => c.id !== clientId);
   });
-wss.on('connection',function(ws, req){
-    console.log('started client interval');
-
-    console.log
-
-    ws.on('close', function() {
-        console.log('stopping client interval');
-        //clearInterval(id);
-    });
-
-
-    setTimeout(function(){
-        ws.send("datafromServeur");
-    },10000)
-
-    ws.on('message', function(data){
-        //{'type':'offer','action':'AskclientTopatient or AskpatientToClient','sdp':''}
-        console.log(data);
-        //var dataJson  = JSON.parse(data);
-        ws.send(data);
-
-    });
+}
+// Iterate clients list and use write res object method to send new nest
+function sendEventsToAll(newNest) {
+  //clients.forEach(c => c.res.write(JSON.stringify({'data': JSON.stringify(newNest)+'\n\n'})));
+  clients.forEach(c => c.res.write("data: " + JSON.stringify(newNest) + "\n\n"));
+}
+// Middleware for POST /nest endpoint
+async function addNest(req, res, next) {
+  const newNest = req.body;
+  nests.push(newNest);
+  // Send recently added nest as POST result
+  res.json(newNest)
+  // Invoke iterate and send function
+  return sendEventsToAll(newNest);
+}
+// Set cors and bodyParser middlewares
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
+// Define endpoints
+app.post('/nest', addNest);
+app.get('/events', eventsHandler);
+app.get('/status', (req, res) => res.json({clients: clients.length}));
+const PORT = 3000;
+let clients = [];
+let nests = [];
+app.listen(3000, function () {
+  console.log('Example app listening on port 3000!')
 });
-
-
-var server = http.createServer(function(request, response) {
-    
-});
-server.listen(3000, function() {
-    console.log("serveur created");
- });

@@ -3,7 +3,7 @@ var http = require('http');
 
 const wss = new WebSocket.Server({
     port: 3000,
-    host: 'localhost',
+    host: '3.15.227.87',
     perMessageDeflate: {
       zlibDeflateOptions: {
         // See zlib defaults.

@@ -33,6 +33,48 @@ function eventsHandler(req, res, next) {
     clients = clients.filter(c => c.id !== clientId);
   });
 }
+
+
+
+function askOfferDoctor(req, res,next){
+  const event = {'askoffer':true,'type':'doctor'};
+  clients.forEach(c => c.res.write("data: " + JSON.stringify(event) + "\n\n"));
+  res.json('Offer asked');
+}
+
+function askOfferClient(req, res,next){
+  const event = {'askoffer':true,'type':'client'};
+  clients.forEach(c => c.res.write("data: " + JSON.stringify(event) + "\n\n"));
+  res.json('Offer asked');
+}
+
+function callDoctor(req, res,next){
+  const event = {'askoffer':true,'type':'call'};
+  console.log("calling");
+  clients.forEach(c => c.res.write("data: " + JSON.stringify(event) + "\n\n"));
+  res.json('Called doctor');
+}
+
+
+function sendOffer(req, res,next){
+  console.log("offer arrive");
+  const data = req.body;
+  //console.log(req.body);
+  if(data.type == "client"){
+    console.log("sending client offer");
+    const event = {'type':'client', 'offer': data.offer,'sdp':true};
+    clients.forEach(c => c.res.write("data: " + JSON.stringify(event) + "\n\n"));
+  } else if(data.type == "doctor") {
+    console.log("sending doctor offer");
+    const event = {'type':'doctor', 'offer': data.offer,'sdp':true};
+    clients.forEach(c => c.res.write("data: " + JSON.stringify(event) + "\n\n"));
+  }
+
+  res.json('offer trasmited');
+
+}
+
+
 // Iterate clients list and use write res object method to send new nest
 function sendEventsToAll(newNest) {
   //clients.forEach(c => c.res.write(JSON.stringify({'data': JSON.stringify(newNest)+'\n\n'})));
@@ -53,6 +95,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 // Define endpoints
 app.post('/nest', addNest);
+app.get('/offerdoctor',askOfferDoctor);
+app.get('/offerclient',askOfferClient);
+app.post('/offerobject',sendOffer);
+app.get('/call',callDoctor);
 app.get('/events', eventsHandler);
 app.get('/status', (req, res) => res.json({clients: clients.length}));
 const PORT = 3000;

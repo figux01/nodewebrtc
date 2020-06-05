@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--<link rel="stylesheet" href="css/index.css">-->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <style>
+            body,html {
+                background: black;
+            }
+            #local-stream {
+                height: 30%;
+                width: 50%;
+                position: absolute;
+                bottom: 20px;
+                right: 5px;
+            }
+            #video-wrapper {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                overflow: hidden;
+            }
+
+            #video-wrapper >  #remote-stream {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                cursor:pointer;
+            }
+        </style>
+</head>
+<body>
+
+        <video id="local-stream" muted="muted"></video>
+        <div id="video-wrapper">
+            <video id="remote-stream" autoplay></video>
+        </div>
+
+
+<script type="text/javascript">
+                navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                var vgaConstraints  = {
+                    video: {
+                    mandatory: {
+                        maxWidth: 640,
+                        maxHeight: 480
+                    }
+                    }
+                };
+                var constraints = {audio: true, video: true};
+                var localvideo = document.getElementById("local-stream");
+                var remoteVideo = document.getElementById("remote-stream");
+                var localStream, localPeerConnection, remotePeerConnection;
+                var iceList = [];
+                var lastIceNumber = 0;
+                var iceNumber = 0;
+                var doctorOffer;
+
+                //var url = "http://3.15.227.87:3000";
+                var url = "http://localhost:3000";
+
+                var idConsultation;
+                var idPatient;
+
+                var hasRemoteOffer = false;
+
+                setTimeout(()=>{
+                    initEventSource();
+                    //calMedecin();
+                },5000)
+
+                function setId(idC,idP) {
+                    idConsultation = idC;
+                    idPatient = idP;
+                    initEventSource();
+                    //calMedecin();
+
+                }
+
+                function initEventSource(){
+                    var evtSource = new EventSource(url + "/events");
+                    evtSource.onmessage = function(e) {
+                        console.log(e)
+                        if(e.data.indexOf("askoffer") != -1 && e.data.indexOf("doctor") != -1){
+                            //debugger
+                            sendDocOffer();
+                            //localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+                        } else if(e.data.indexOf("client") != -1 && e.data.indexOf("sdp") != -1) {
+                            //debugger
+                            console.log(JSON.parse(e.data));
+                            var jsonData = JSON.parse(e.data);
+                            localPeerConnection.setRemoteDescription(jsonData.offer);
+                        }
+                        else if(e.data.indexOf('call') != -1){
+                            console.log("call receive");
+                            localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+                        }
+                    }
+                }
+
+
+
+
+                function successCallback(stream) {
+                    window.stream = stream;
+                    localvideo.srcObject = stream;
+                    localvideo.play();
+                    localStream = stream;
+                    call();
+                }
+
+                function errorCallback(error){
+                    console.log("navigator.getUserMedia error: ", JSON.stringify(error));
+                }
+
+                function call() {
+                    if (navigator.webkitGetUserMedia) {
+                        RTCPeerConnection = webkitRTCPeerConnection;
+                    }
+                    console.log("RTCPeerConnection object: " + RTCPeerConnection);
+                    var config = { iceServers: [{
+                        urls: "turn:turn.thepocketapp.com",
+                        username: "albert",
+                        credential: "E9jfL~9bSE.k"
+                    }]
+                    };
+                    localPeerConnection = new RTCPeerConnection(config);
+                    console.log("Created local peer connection object localPeerConnection");
+                    // Add a handler associated with ICE protocol events
+                    localPeerConnection.onicecandidate = gotLocalIceCandidate;
+                    localPeerConnection.onaddstream = gotRemoteStream;
+                    localPeerConnection.addStream(localStream);
+                    console.log(localPeerConnection);
+                    //localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+
+                }
+
+                function onSignalingError(error){
+                    console.log('Failed to create signaling message : ' + error.name);
+                }
+
+                function gotLocalDescription(description){
+                    // Add the local description to the local PeerConnection
+                    console.log("Offer from localPeerConnection: \n" + description.sdp);
+                    localPeerConnection.setLocalDescription(description);
+                    if(iceList.length > 0){
+                        for(var i=0; i<iceList.length; i++) {
+                                //debugger;
+                                if(iceList[i]){
+                                    localPeerConnection.addIceCandidate(iceList[i]);
+                                }
+                        }
+                        doctorOffer = description;
+                        askOffer();
+                    }
+
+
+
+                }
+
+                function sendDocOffer(){
+                    var xhttp = new XMLHttpRequest();
+                    //debugger;
+                    xhttp.onreadystatechange = function () {
+                        console.log(this.readyState);
+                        if(this.readyState === 4) {
+                            if(this.status === 200){
+                                //askOffer();
+                            }
+                            else {
+                                alert("une erreur a été rencontrée ");
+                            }
+                        }
+
+                    };
+                    var form = new FormData();
+                    form.append('offer', JSON.stringify({type:"doctor",sdp:doctorOffer}));
+                    xhttp.open("POST", url+ '/offerobject');
+                    xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    xhttp.send(JSON.stringify({type:"doctor",offer:doctorOffer}));
+                }
+
+                function askOffer(){
+                    //debugger;
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.onreadystatechange = function () {
+                        if (this.readyState === 4) {
+                            if (this.status === 200 && this.responseText !== '') {
+
+                            } else {
+                                alert("une erreur a été rencontrée ");
+                            }
+                        }
+
+                    };
+                    xhttp.open("GET", url+'/offerclient');
+                    xhttp.send();
+                }
+
+                function calMedecin(){
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.onreadystatechange = function () {
+                        if (this.readyState === 4) {
+                            if (this.status === 200 && this.responseText !== '') {
+
+                            } else {
+                                alert("une erreur a été rencontrée ");
+                            }
+                        }
+
+                    };
+                    xhttp.open("GET", url+'/call'+idConsultation);
+                    xhttp.send();
+                }
+
+                function goRemoteDescription(description){
+                    localPeerConnection.setRemoteDescription(description);
+                }
+
+                // Handler to be called when hanging up the call
+                function hangup() {
+                    console.log("Ending call");
+                    // Close PeerConnection(s)
+                    localPeerConnection.close();
+                    //remotePeerConnection.close();
+                    // Reset local variables
+                    localPeerConnection = null;
+                    localvideo.srcObject = null;
+                    remoteVideo.srcObject = null;
+                    //remotePeerConnection = null;
+                    // Disable Hangup button
+                    //hangupButton.disabled = true;
+                    // Enable Call button to allow for new calls to be established
+                    //callButton.disabled = false;
+                }
+
+                function gotRemoteStream(event){
+                    // Associate the remote video element with the retrieved stream
+                    //remoteVideo.srcObject = event.stream;
+                    console.log("Received remote stream",event);
+                    if (window.URL) {
+                        // Chrome
+                        remoteVideo.srcObject = event.stream;
+                        //remoteVideo.src = URL.createObjectURL(event.stream);
+                        //remoteVideo.play
+                    } else {
+                        // Firefox
+                        remoteVideo.srcObject = event.stream;
+                    }
+
+
+                }
+
+                function gotLocalIceCandidate(event){
+                    console.log(event);
+                    iceList.push(event.candidate);
+                    iceNumber += 1
+                    lastIceNumber += 1
+                    RunTimer(lastIceNumber);
+                    if (event.candidate && hasRemoteOffer) {
+                        console.log("Local ICE candidate: \n"+ event.candidate.candidate);
+                        localPeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate))
+                    }
+                }
+
+                function RunTimer(data) {
+                    setTimeout(function(){
+                        if(data === iceNumber){
+                            localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+                        }
+                    },1500)
+                }
+
+                function gotRemoteIceCandidate(event){
+                    if (event.candidate) {
+                        // Add candidate to the local PeerConnection
+                        localPeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
+                        console.log("Remote ICE candidate: \n " + event.candidate.candidate);
+                    }
+                }
+
+                navigator.getUserMedia(constraints,successCallback,errorCallback);
+
+
+        </script>
+</body>
+
+</html>

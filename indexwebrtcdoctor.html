@@ -62,8 +62,8 @@
                 var iceNumber = 0;
                 var doctorOffer;
 
-                //var url = "http://3.15.227.87:3000";
-                var url = "http://localhost:3000";
+                var url = "http://3.15.227.87:3000";
+                //var url = "http://localhost:3000";
 
                 var idConsultation;
                 var idPatient;
@@ -89,8 +89,8 @@
                         console.log(e)
                         if(e.data.indexOf("askoffer") != -1 && e.data.indexOf("doctor") != -1){
                             //debugger
-                            sendDocOffer();
-                            //localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+                            //sendDocOffer();
+                            localPeerConnection.createAnswer(gotRemoteDescription, onSignalingError);
                         } else if(e.data.indexOf("client") != -1 && e.data.indexOf("sdp") != -1) {
                             //debugger
                             console.log(JSON.parse(e.data));
@@ -99,7 +99,8 @@
                         }
                         else if(e.data.indexOf('call') != -1){
                             console.log("call receive");
-                            localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+                            askOffer();
+                            //localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
                         }
                     }
                 }
@@ -145,11 +146,13 @@
                     console.log('Failed to create signaling message : ' + error.name);
                 }
 
-                function gotLocalDescription(description){
+                function gotRemoteDescription(description){
                     // Add the local description to the local PeerConnection
                     console.log("Offer from localPeerConnection: \n" + description.sdp);
                     localPeerConnection.setLocalDescription(description);
-                    if(iceList.length > 0){
+                    doctorOffer = description;
+                    sendDocOffer();
+                    /*if(iceList.length > 0){
                         for(var i=0; i<iceList.length; i++) {
                                 //debugger;
                                 if(iceList[i]){
@@ -157,11 +160,8 @@
                                 }
                         }
                         doctorOffer = description;
-                        askOffer();
-                    }
-
-
-
+                        sendDocOffer();
+                    }*/
                 }
 
                 function sendDocOffer(){
@@ -272,7 +272,7 @@
                 function RunTimer(data) {
                     setTimeout(function(){
                         if(data === iceNumber){
-                            localPeerConnection.createOffer(gotLocalDescription, onSignalingError);
+                            localPeerConnection.createAnswer(gotRemoteDescription, onSignalingError);
                         }
                     },1500)
                 }

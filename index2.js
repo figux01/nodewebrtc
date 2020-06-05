@@ -1,4 +1,4 @@
-var evtSource = new EventSource("e-liveteaching.com/webrtc/index.php");
+/*var evtSource = new EventSource("e-liveteaching.com/webrtc/index.php");
 evtSource.onmessage = function(e) {
     var newElement = document.createElement("li");
 
@@ -11,4 +11,4 @@ evtSource.addEventListener("ping", function(e) {
     var obj = JSON.parse(e.data);
     newElement.innerHTML = "ping at " + obj.time;
     eventList.appendChild(newElement);
-}, false);
+}, false);*/

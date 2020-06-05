@@ -1,7 +1,7 @@
 $(document).ready(function(){
     window.WebSocket = window.WebSocket || window.MozWebSocket;
 
-    var connection = new WebSocket('ws://localhost:8080');
+    var connection = new WebSocket('ws://3.15.227.87:8080');
 
     connection.onopen = function () {
         // connection is opened and ready to use

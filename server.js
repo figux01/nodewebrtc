@@ -3,7 +3,7 @@ var http = require('http');
 
 const wss = new WebSocket.Server({
     port: 3000,
-    host: '127.0.0.1',
+    host: 'localhost',
     perMessageDeflate: {
       zlibDeflateOptions: {
         // See zlib defaults.
@@ -49,9 +49,9 @@ wss.on('connection',function(ws, req){
 });
 
 
-var server = http.createServer(function(request, response) {
+/*var server = http.createServer(function(request, response) {
     
-  });
+});
 server.listen(3000, function() {
     console.log("serveur created");
- });
+ });*/
